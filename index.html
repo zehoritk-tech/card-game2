@@ -14,11 +14,6 @@ body{
 
 h2{margin:15px;}
 
-#startBtn{
-  padding:10px 16px;
-  cursor:pointer;
-}
-
 .grid{
   display:grid;
   grid-template-columns: repeat(5, 1fr);
@@ -94,7 +89,6 @@ input[type="text"]{
   margin:5px;
 }
 
-/* תמונה מוגדלת */
 #modal{
   display:none;
   position:fixed;
@@ -121,15 +115,10 @@ input[type="text"]{
 
 <h2>משחק קלפים</h2>
 
-<button id="startBtn" onclick="startGame()">קדימה מתחילים</button>
-
-<div id="game" class="grid" style="display:none;"></div>
-
-<hr>
+<div id="game" class="grid"></div>
 
 <div id="editor"></div>
 
-<!-- חלון הגדלה -->
 <div id="modal" onclick="closeModal()">
   <img id="modalImg">
 </div>
@@ -147,6 +136,11 @@ function save(){
   localStorage.setItem("cards", JSON.stringify(cards));
 }
 
+function isTeacherMode(){
+  const params = new URLSearchParams(window.location.search);
+  return params.get("teacher") === "1";
+}
+
 function buildEditor(){
   const editor = document.getElementById("editor");
   editor.innerHTML = "<h3>עריכת קלפים</h3>";
@@ -155,8 +149,8 @@ function buildEditor(){
     editor.innerHTML += `
       <div>
         <b>קלף ${i+1}</b><br>
-        <textarea placeholder="כיתוב לקלף" rows="2"
-          onchange="cards[${i}].text=this.value;save()">${c.text || ""}</textarea>
+        <input type="text" placeholder="טקסט" value="${c.text}"
+          onchange="cards[${i}].text=this.value;save()">
         <br>
         <input type="file" onchange="loadImage(event,${i})">
       </div>
@@ -175,11 +169,7 @@ function loadImage(event,i){
   reader.readAsDataURL(event.target.files[0]);
 }
 
-function startGame(){
-  document.getElementById("startBtn").style.display="none";
-  document.getElementById("editor").style.display="none";
-  document.getElementById("game").style.display="grid";
-
+function buildGame(){
   const game = document.getElementById("game");
   game.innerHTML = "";
 
@@ -219,7 +209,15 @@ function closeModal(){
   document.getElementById("modal").style.display="none";
 }
 
-buildEditor();
+// הפעלה
+buildGame();
+
+if(isTeacherMode()){
+  document.getElementById("editor").style.display="block";
+  buildEditor();
+} else {
+  document.getElementById("editor").style.display="none";
+}
 
 </script>
 
