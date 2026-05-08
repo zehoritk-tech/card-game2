@@ -171,7 +171,7 @@ function buildGame(){
 
     card.innerHTML = `
       <div class="inner" onclick="this.parentElement.classList.toggle('flipped')">
-        <div class="face front">לחץ כדי להפוך</div>
+        <div class="face front">לחצו כדי להפוך</div>
         <div class="face back">
           <img src="${c.image}" onclick="openModal(event,'${c.image}')">
           <div class="text">${c.text}</div>
