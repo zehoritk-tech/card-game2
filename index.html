@@ -2,7 +2,7 @@
 <html lang="he">
 <head>
 <meta charset="UTF-8">
-<title>משחק קלפים</title>
+<title>משחק קלפים לכיתה</title>
 
 <style>
 body{
@@ -77,18 +77,6 @@ h2{margin:15px;}
   font-size:14px;
 }
 
-#editor{
-  margin-top:20px;
-  background:white;
-  padding:10px;
-}
-
-input[type="text"]{
-  width:90%;
-  padding:6px;
-  margin:5px;
-}
-
 #modal{
   display:none;
   position:fixed;
@@ -107,7 +95,6 @@ input[type="text"]{
   max-height:95%;
   border-radius:10px;
 }
-
 </style>
 </head>
 
@@ -117,57 +104,34 @@ input[type="text"]{
 
 <div id="game" class="grid"></div>
 
-<div id="editor"></div>
-
 <div id="modal" onclick="closeModal()">
   <img id="modalImg">
 </div>
 
 <script>
 
-const MAX = 10;
-
-let cards = JSON.parse(localStorage.getItem("cards")) || Array.from({length: MAX}, () => ({
-  image:"",
-  text:""
-}));
-
-function save(){
-  localStorage.setItem("cards", JSON.stringify(cards));
-}
-
-function isTeacherMode(){
-  const params = new URLSearchParams(window.location.search);
-  return params.get("teacher") === "1";
-}
-
-function buildEditor(){
-  const editor = document.getElementById("editor");
-  editor.innerHTML = "<h3>עריכת קלפים</h3>";
-
-  cards.forEach((c,i)=>{
-    editor.innerHTML += `
-      <div>
-        <b>קלף ${i+1}</b><br>
-        <input type="text" placeholder="טקסט" value="${c.text}"
-          onchange="cards[${i}].text=this.value;save()">
-        <br>
-        <input type="file" onchange="loadImage(event,${i})">
-      </div>
-      <hr>
-    `;
-  });
-}
-
-function loadImage(event,i){
-  let reader = new FileReader();
-  reader.onload = function(){
-    cards[i].image = reader.result;
-    save();
-    buildEditor();
-  };
-  reader.readAsDataURL(event.target.files[0]);
-}
+const cards = [
+  {
+    image: "https://via.placeholder.com/300x200?text=Card+1",
+    text: "שאלה / מושג לקלף 1"
+  },
+  {
+    image: "https://via.placeholder.com/300x200?text=Card+2",
+    text: "שאלה / מושג לקלף 2"
+  },
+  {
+    image: "https://via.placeholder.com/300x200?text=Card+3",
+    text: "שאלה / מושג לקלף 3"
+  },
+  {
+    image: "https://via.placeholder.com/300x200?text=Card+4",
+    text: "שאלה / מושג לקלף 4"
+  },
+  {
+    image: "https://via.placeholder.com/300x200?text=Card+5",
+    text: "שאלה / מושג לקלף 5"
+  }
+];
 
 function buildGame(){
   const game = document.getElementById("game");
@@ -209,15 +173,7 @@ function closeModal(){
   document.getElementById("modal").style.display="none";
 }
 
-// הפעלה
 buildGame();
-
-if(isTeacherMode()){
-  document.getElementById("editor").style.display="block";
-  buildEditor();
-} else {
-  document.getElementById("editor").style.display="none";
-}
 
 </script>
 
