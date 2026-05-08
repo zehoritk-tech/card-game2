@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+<meta charset="UTF-8">
+<title>משחק קלפים</title>
+
+<style>
+body{
+  font-family: Arial;
+  direction: rtl;
+  text-align: center;
+  background:#f5f5f5;
+}
+
+h2{margin:15px;}
+
+#startBtn{
+  padding:10px 16px;
+  cursor:pointer;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap:10px;
+  max-width:900px;
+  margin:20px auto;
+}
+
+.card{
+  width:100%;
+  aspect-ratio: 3/4;
+  perspective:1000px;
+}
+
+.inner{
+  width:100%;
+  height:100%;
+  position:relative;
+  transform-style:preserve-3d;
+  transition: transform 0.6s;
+  cursor:pointer;
+}
+
+.card.flipped .inner{
+  transform: rotateY(180deg);
+}
+
+.face{
+  position:absolute;
+  width:100%;
+  height:100%;
+  backface-visibility:hidden;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px;
+  box-sizing:border-box;
+}
+
+.front{
+  background:#ddd;
+  font-size:18px;
+}
+
+.back{
+  background:white;
+  transform: rotateY(180deg);
+  flex-direction:column;
+}
+
+.back img{
+  max-width:100%;
+  max-height:70%;
+  border-radius:8px;
+  cursor: zoom-in;
+}
+
+.back .text{
+  margin-top:10px;
+  font-size:14px;
+}
+
+#editor{
+  margin-top:20px;
+  background:white;
+  padding:10px;
+}
+
+input[type="text"]{
+  width:90%;
+  padding:6px;
+  margin:5px;
+}
+
+/* תמונה מוגדלת */
+#modal{
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.9);
+  justify-content:center;
+  align-items:center;
+  z-index:999;
+}
+
+#modal img{
+  max-width:95%;
+  max-height:95%;
+  border-radius:10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h2>משחק קלפים</h2>
+
+<button id="startBtn" onclick="startGame()">קדימה מתחילים</button>
+
+<div id="game" class="grid" style="display:none;"></div>
+
+<hr>
+
+<div id="editor"></div>
+
+<!-- חלון הגדלה -->
+<div id="modal" onclick="closeModal()">
+  <img id="modalImg">
+</div>
+
+<script>
+
+const MAX = 10;
+
+let cards = JSON.parse(localStorage.getItem("cards")) || Array.from({length: MAX}, () => ({
+  image:"",
+  text:""
+}));
+
+function save(){
+  localStorage.setItem("cards", JSON.stringify(cards));
+}
+
+function buildEditor(){
+  const editor = document.getElementById("editor");
+  editor.innerHTML = "<h3>עריכת קלפים</h3>";
+
+  cards.forEach((c,i)=>{
+    editor.innerHTML += `
+      <div>
+        <b>קלף ${i+1}</b><br>
+        <textarea placeholder="כיתוב לקלף" rows="2"
+          onchange="cards[${i}].text=this.value;save()">${c.text || ""}</textarea>
+        <br>
+        <input type="file" onchange="loadImage(event,${i})">
+      </div>
+      <hr>
+    `;
+  });
+}
+
+function loadImage(event,i){
+  let reader = new FileReader();
+  reader.onload = function(){
+    cards[i].image = reader.result;
+    save();
+    buildEditor();
+  };
+  reader.readAsDataURL(event.target.files[0]);
+}
+
+function startGame(){
+  document.getElementById("startBtn").style.display="none";
+  document.getElementById("editor").style.display="none";
+  document.getElementById("game").style.display="grid";
+
+  const game = document.getElementById("game");
+  game.innerHTML = "";
+
+  let order = [...cards.keys()];
+  for(let i=order.length-1;i>0;i--){
+    let j=Math.floor(Math.random()*(i+1));
+    [order[i],order[j]]=[order[j],order[i]];
+  }
+
+  order.forEach(i=>{
+    let c = cards[i];
+
+    let card = document.createElement("div");
+    card.className="card";
+
+    card.innerHTML = `
+      <div class="inner" onclick="this.parentElement.classList.toggle('flipped')">
+        <div class="face front">לחץ כדי להפוך</div>
+        <div class="face back">
+          <img src="${c.image}" onclick="openModal(event,'${c.image}')">
+          <div class="text">${c.text}</div>
+        </div>
+      </div>
+    `;
+
+    game.appendChild(card);
+  });
+}
+
+function openModal(event,src){
+  event.stopPropagation();
+  document.getElementById("modal").style.display="flex";
+  document.getElementById("modalImg").src=src;
+}
+
+function closeModal(){
+  document.getElementById("modal").style.display="none";
+}
+
+buildEditor();
+
+</script>
+
+</body>
+</html>
