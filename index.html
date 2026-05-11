@@ -2,25 +2,23 @@
 <html lang="he">
 <head>
 <meta charset="UTF-8">
-<title>מתרעננים באלקטרוסטטיקה</title>
+<title>משחק קלפים</title>
 
 <style>
 body{
-  font-family: Arial, sans-serif;
+  font-family: Arial;
   direction: rtl;
   text-align: center;
   background:#f5f5f5;
-  margin: 0;
-  padding: 20px;
 }
 
-h2{margin:15px; color: #333;}
+h2{margin:15px;}
 
 .grid{
   display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap:15px;
-  max-width:1000px;
+  grid-template-columns: repeat(5, 1fr);
+  gap:10px;
+  max-width:900px;
   margin:20px auto;
 }
 
@@ -52,51 +50,48 @@ h2{margin:15px; color: #333;}
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:15px;
+  padding:10px;
   box-sizing:border-box;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-/* צד קדמי - אדום מדורג */
 .front{
-  background: linear-gradient(135deg, #ff4b2b, #ff416c);
-  color: white;
-  font-size: 18px;
-  font-weight: bold;
+  background:#ddd;
+  font-size:18px;
 }
 
-/* קלף שנסגר הופך לאפור */
-.card.visited .front {
-  background: #bdc3c7 !important;
-  color: #7f8c8d;
+/* המחלקה החדשה לקלף שביקרו בו */
+.visited-front {
+  background: #bbb !important;
 }
 
 .back{
-  background: white;
+  background:white;
   transform: rotateY(180deg);
   flex-direction:column;
-  border: 2px solid #ddd;
 }
 
 .back img{
-  max-width: 100%;
-  max-height: 70%;
-  border-radius: 5px;
+  max-width:100%;
+  max-height:70%;
+  border-radius:8px;
   cursor: zoom-in;
 }
 
 .back .text{
   margin-top:10px;
-  font-size: 16px;
-  color: #333;
+  font-size:14px;
 }
 
 #editor{
-  margin-top:40px;
+  margin-top:20px;
   background:white;
-  padding:20px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  padding:10px;
+}
+
+input[type="text"]{
+  width:90%;
+  padding:6px;
+  margin:5px;
 }
 
 #modal{
@@ -113,16 +108,17 @@ h2{margin:15px; color: #333;}
 }
 
 #modal img{
-  max-width:90%;
-  max-height:90%;
+  max-width:95%;
+  max-height:95%;
+  border-radius:10px;
 }
+
 </style>
 </head>
 
 <body>
 
-<h2>מתרעננים באלקטרוסטטיקה בעזרת תמונות</h2>
-<p>פתחו קלף אחד בכל פעם. יש לסגור קלף כדי שתוכלו לפתוח אחר.</p>
+<h2>משחק קלפים</h2>
 
 <div id="game" class="grid"></div>
 
@@ -135,7 +131,6 @@ h2{margin:15px; color: #333;}
 <script>
 
 const MAX = 10;
-let openedCard = null;
 
 let cards = JSON.parse(localStorage.getItem("cards")) || Array.from({length: MAX}, () => ({
   image:"",
@@ -153,17 +148,18 @@ function isTeacherMode(){
 
 function buildEditor(){
   const editor = document.getElementById("editor");
-  editor.innerHTML = "<h3>עריכת קלפים (מצב מורה)</h3>";
+  editor.innerHTML = "<h3>עריכת קלפים</h3>";
 
   cards.forEach((c,i)=>{
     editor.innerHTML += `
-      <div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+      <div>
         <b>קלף ${i+1}</b><br>
-        <input type="text" placeholder="טקסט לקלף" value="${c.text}" 
-               style="width:200px; padding:5px;"
-               onchange="cards[${i}].text=this.value;save()">
+        <input type="text" placeholder="טקסט" value="${c.text}"
+          onchange="cards[${i}].text=this.value;save()">
+        <br>
         <input type="file" onchange="loadImage(event,${i})">
       </div>
+      <hr>
     `;
   });
 }
@@ -178,6 +174,8 @@ function loadImage(event,i){
   reader.readAsDataURL(event.target.files[0]);
 }
 
+let openedCard = null;
+
 function buildGame(){
   const game = document.getElementById("game");
   game.innerHTML = "";
@@ -190,39 +188,43 @@ function buildGame(){
 
   order.forEach(i=>{
     let c = cards[i];
+
     let card = document.createElement("div");
     card.className="card";
 
     card.innerHTML = `
       <div class="inner">
-        <div class="face front">לחצו כדי להפוך</div>
+        <div class="face front"><strong>לחצו כדי להפוך</strong></div>
         <div class="face back">
-          ${c.image ? `<img src="${c.image}" onclick="openModal(event,'${c.image}')">` : ''}
-          <div class="text">${c.text || ''}</div>
+          <img src="${c.image}" onclick="openModal(event,'${c.image}')">
+          <div class="text">${c.text}</div>
         </div>
       </div>
     `;
 
-    card.addEventListener("click", () => handleCard(card));
+    card.addEventListener("click", ()=>handleCard(card));
+
     game.appendChild(card);
   });
 }
 
 function handleCard(card){
-  // אם לוחצים על הקלף הפתוח - סוגרים אותו וצובעים באפור
+
+  // אם לוחצים שוב על אותו קלף פתוח - סוגרים אותו והופכים את החזית לאפורה
   if(openedCard === card){
     card.classList.remove("flipped");
-    card.classList.add("visited"); 
+    const front = card.querySelector('.front');
+    front.classList.add('visited-front'); // הופך לאפור
     openedCard = null;
     return;
   }
 
-  // חסימת פתיחת קלף חדש אם יש אחד פתוח
+  // אם כבר יש קלף פתוח אחר, לא מאפשרים לפתוח קלף נוסף
   if(openedCard !== null){
-    return; 
+    return;
   }
 
-  // פתיחת הקלף
+  // פתיחת קלף
   card.classList.add("flipped");
   openedCard = card;
 }
