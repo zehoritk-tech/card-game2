@@ -2,23 +2,25 @@
 <html lang="he">
 <head>
 <meta charset="UTF-8">
-<title>משחק קלפים</title>
+<title>משחק קלפים משופר</title>
 
 <style>
 body{
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   direction: rtl;
   text-align: center;
   background:#f5f5f5;
+  margin: 0;
+  padding: 20px;
 }
 
-h2{margin:15px;}
+h2{margin:15px; color: #333;}
 
 .grid{
   display:grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap:10px;
-  max-width:900px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap:15px;
+  max-width:1000px;
   margin:20px auto;
 }
 
@@ -52,41 +54,49 @@ h2{margin:15px;}
   justify-content:center;
   padding:10px;
   box-sizing:border-box;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
+/* עיצוב הצד הקדמי - ברירת מחדל */
 .front{
-  background:#ddd;
-  font-size:18px;
+  background: linear-gradient(135deg, #ff4b2b, #ff416c);
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* עיצוב קלף שכבר ביקרו בו */
+.card.visited .front {
+  background: #bdc3c7 !important;
+  color: #7f8c8d;
 }
 
 .back{
-  background:white;
+  background: white;
   transform: rotateY(180deg);
   flex-direction:column;
+  border: 2px solid #ddd;
 }
 
 .back img{
-  max-width:100%;
-  max-height:70%;
-  border-radius:8px;
+  max-width: 100%;
+  max-height: 70%;
+  border-radius: 5px;
   cursor: zoom-in;
 }
 
 .back .text{
   margin-top:10px;
-  font-size:14px;
+  font-size:16px;
+  color: #333;
 }
 
 #editor{
-  margin-top:20px;
+  margin-top:40px;
   background:white;
-  padding:10px;
-}
-
-input[type="text"]{
-  width:90%;
-  padding:6px;
-  margin:5px;
+  padding:20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
 #modal{
@@ -103,17 +113,16 @@ input[type="text"]{
 }
 
 #modal img{
-  max-width:95%;
-  max-height:95%;
-  border-radius:10px;
+  max-width:90%;
+  max-height:90%;
 }
-
 </style>
 </head>
 
 <body>
 
 <h2>משחק קלפים</h2>
+<p>פתחו קלף אחד בכל פעם. יש לסגור קלף כדי לפתוח אחד חדש.</p>
 
 <div id="game" class="grid"></div>
 
@@ -126,6 +135,7 @@ input[type="text"]{
 <script>
 
 const MAX = 10;
+let openedCard = null;
 
 let cards = JSON.parse(localStorage.getItem("cards")) || Array.from({length: MAX}, () => ({
   image:"",
@@ -143,18 +153,17 @@ function isTeacherMode(){
 
 function buildEditor(){
   const editor = document.getElementById("editor");
-  editor.innerHTML = "<h3>עריכת קלפים</h3>";
+  editor.innerHTML = "<h3>עריכת קלפים (מצב מורה)</h3>";
 
   cards.forEach((c,i)=>{
     editor.innerHTML += `
-      <div>
+      <div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
         <b>קלף ${i+1}</b><br>
-        <input type="text" placeholder="טקסט" value="${c.text}"
-          onchange="cards[${i}].text=this.value;save()">
-        <br>
+        <input type="text" placeholder="טקסט לקלף" value="${c.text}" 
+               style="width:200px; padding:5px;"
+               onchange="cards[${i}].text=this.value;save()">
         <input type="file" onchange="loadImage(event,${i})">
       </div>
-      <hr>
     `;
   });
 }
@@ -169,13 +178,12 @@ function loadImage(event,i){
   reader.readAsDataURL(event.target.files[0]);
 }
 
-let openedCard = null;
-
 function buildGame(){
   const game = document.getElementById("game");
   game.innerHTML = "";
 
   let order = [...cards.keys()];
+  // ערבוב
   for(let i=order.length-1;i>0;i--){
     let j=Math.floor(Math.random()*(i+1));
     [order[i],order[j]]=[order[j],order[i]];
@@ -183,44 +191,41 @@ function buildGame(){
 
   order.forEach(i=>{
     let c = cards[i];
-
     let card = document.createElement("div");
     card.className="card";
 
     card.innerHTML = `
       <div class="inner">
-        <div class="face front"><strong>לחצו כדי להפוך</strong></div>
+        <div class="face front">?</div>
         <div class="face back">
-          <img src="${c.image}" onclick="openModal(event,'${c.image}')">
-          <div class="text">${c.text}</div>
+          ${c.image ? `<img src="${c.image}" onclick="openModal(event,'${c.image}')">` : ''}
+          <div class="text">${c.text || '(ריק)'}</div>
         </div>
       </div>
     `;
 
-    card.addEventListener("click", ()=>handleCard(card));
-
+    card.addEventListener("click", () => handleCard(card));
     game.appendChild(card);
   });
 }
 
 function handleCard(card){
-
-  // אם אין קלף פתוח
-  if(openedCard === null){
-    card.classList.add("flipped");
-    openedCard = card;
+  // 1. אם לוחצים על הקלף שכבר פתוח - סוגרים אותו וצובעים באפור
+  if(openedCard === card){
+    card.classList.remove("flipped");
+    card.classList.add("visited"); // הופך לאפור
+    openedCard = null;
     return;
   }
 
-  // אם לוחצים שוב על אותו קלף
-  if(openedCard === card){
-    card.classList.remove("flipped");
-
-    const front = card.querySelector('.front');
-    front.style.background = 'linear-gradient(135deg, #d9d9d9, #bfbfbf)';
-
-    openedCard = null;
+  // 2. אם מנסים לפתוח קלף חדש כשיש אחד פתוח - חוסמים
+  if(openedCard !== null){
+    return; 
   }
+
+  // 3. פתיחת קלף
+  card.classList.add("flipped");
+  openedCard = card;
 }
 
 function openModal(event,src){
@@ -233,6 +238,7 @@ function closeModal(){
   document.getElementById("modal").style.display="none";
 }
 
+// הפעלה
 buildGame();
 
 if(isTeacherMode()){
